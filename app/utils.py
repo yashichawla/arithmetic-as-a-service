@@ -2,9 +2,6 @@ import json
 import string
 import numpy as np
 from sympy import *
-from multiprocessing import Value
-
-COUNTER = Value("i", 0)
 
 
 def getFunctionResult(function, vargs, **flags):
@@ -114,8 +111,8 @@ def getMatrices(numbers):  # url/nmatrices/ndims/dim1/.../dimn/num1...
     numbers = list(map(float, numbers))
     nmatrices = int(numbers[0])
     ndims = int(numbers[1])
-    dims = [int(numbers[i]) for i in range(2, 2+ndims)]
-    matrix_values = np.split(np.asarray(numbers[2+ndims:]), nmatrices)
+    dims = [int(numbers[i]) for i in range(2, 2 + ndims)]
+    matrix_values = np.split(np.asarray(numbers[2 + ndims :]), nmatrices)
     matrices = [np.reshape(m, dims).tolist() for m in matrix_values]
 
     if nmatrices == 1:
@@ -142,12 +139,13 @@ def exponent(numbers):
     bases = numbers[1:]
     result = list()
     for b in bases:
-        result.append(float(b)**e)
+        result.append(float(b) ** e)
 
     if len(result) == 1:
         return result[0]
     else:
         return result
+
 
 # url/log/b/n1/n2/n3/../nk
 
@@ -157,7 +155,7 @@ def logarithm(numbers):
     nums = numbers[1:]
     result = list()
     for n in nums:
-        result.append(np.log10(float(n))/np.log10(base))
+        result.append(np.log10(float(n)) / np.log10(base))
 
     if len(result) == 1:
         return result[0]
@@ -181,8 +179,9 @@ def differentiateExpression(numbers):
     variable_to_differentiate = Symbol(numbers[0])
     order = int(numbers[1])
     expression = "/".join(numbers[2:])
-    expression_variables = {ch: Symbol(
-        ch) for ch in expression if ch in string.ascii_letters}
+    expression_variables = {
+        ch: Symbol(ch) for ch in expression if ch in string.ascii_letters
+    }
     locals().update(expression_variables)
     derivative = diff(expression, variable_to_differentiate, order)
     return str(derivative)
@@ -192,8 +191,9 @@ def differentiateExpression(numbers):
 def integrateExpressionIndefinite(numbers):
     variable_to_integrate = Symbol(numbers[0])
     expression = "/".join(numbers[1:])
-    expression_variables = {ch: Symbol(
-        ch) for ch in expression if ch in string.ascii_letters}
+    expression_variables = {
+        ch: Symbol(ch) for ch in expression if ch in string.ascii_letters
+    }
     locals().update(expression_variables)
     integral = integrate(expression, variable_to_integrate)
     return str(integral)
@@ -205,11 +205,13 @@ def integrateExpressionDefinite(numbers):
     limit_lower = float(numbers[1])
     limit_upper = float(numbers[2])
     expression = "/".join(numbers[3:])
-    expression_variables = {ch: Symbol(
-        ch) for ch in expression if ch in string.ascii_letters}
+    expression_variables = {
+        ch: Symbol(ch) for ch in expression if ch in string.ascii_letters
+    }
     locals().update(expression_variables)
     integral_value = integrate(
-        expression, (variable_to_integrate, limit_lower, limit_upper))
+        expression, (variable_to_integrate, limit_lower, limit_upper)
+    )
     # check type and return - can result in numeric result or equation
     return str(integral_value)
 
@@ -220,19 +222,20 @@ def getLimit(numbers):
     variable_to_limit = Symbol(numbers[0])
     limit_value = numbers[1]
 
-    if '+' in limit_value:
-        side = '+'
+    if "+" in limit_value:
+        side = "+"
         limit_value = float(limit_value[:-1])
-    elif '-' in limit_value:
-        side = '-'
+    elif "-" in limit_value:
+        side = "-"
         limit_value = float(limit_value[:-1])
     else:
-        side = '+'
+        side = "+"
         limit_value = float(limit_value)
 
     expression = "/".join(numbers[2:])
-    expression_variables = {ch: Symbol(
-        ch) for ch in expression if ch in string.ascii_letters}
+    expression_variables = {
+        ch: Symbol(ch) for ch in expression if ch in string.ascii_letters
+    }
     locals().update(expression_variables)
     result = float(limit(expression, variable_to_limit, limit_value, dir=side))
     return result
@@ -244,22 +247,24 @@ def getSeries(numbers):
     x0 = numbers[1]
     n = int(numbers[2])
 
-    if '+' in x0:
-        side = '+'
+    if "+" in x0:
+        side = "+"
         x0 = float(x0[:-1])
-    elif '-' in x0:
-        side = '-'
+    elif "-" in x0:
+        side = "-"
         x0 = float(x0[:-1])
     else:
-        side = '+'
+        side = "+"
         x0 = float(x0)
 
     expression = "/".join(numbers[3:])
-    expression_variables = {ch: Symbol(
-        ch) for ch in expression if ch in string.ascii_letters}
+    expression_variables = {
+        ch: Symbol(ch) for ch in expression if ch in string.ascii_letters
+    }
     locals().update(expression_variables)
-    result = str(series(expression, variable_in_series, x0,
-                        n, dir=side))   # take n_terms as input?
+    result = str(
+        series(expression, variable_in_series, x0, n, dir=side)
+    )  # take n_terms as input?
     return result
 
 
@@ -270,9 +275,11 @@ def getFourierSeries(numbers):
     limit_lower = float(numbers[2])
     limit_upper = float(numbers[3])
     expression = "/".join(numbers[4:])
-    expression_variables = {ch: Symbol(
-        ch) for ch in expression if ch in string.ascii_letters}
+    expression_variables = {
+        ch: Symbol(ch) for ch in expression if ch in string.ascii_letters
+    }
     locals().update(expression_variables)
     fourier_value = fourier_series(
-        expression, (variable_in_series, limit_lower, limit_upper)).truncate(n_terms)
+        expression, (variable_in_series, limit_lower, limit_upper)
+    ).truncate(n_terms)
     return str(fourier_value)

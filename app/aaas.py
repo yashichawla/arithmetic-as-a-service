@@ -1,16 +1,18 @@
 import os
 import dotenv
+import pytz
 import flask
 from datetime import datetime
 from flask import Flask, request, render_template
-from flask_sqlalchemy import SQLAlchemy
 from flask_table import Table, Col
-from .utils import *
+from utils import *
+from db import LoggingDatabase
 
 dotenv.load_dotenv()
+IST = pytz.timezone("Asia/Kolkata")
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ["DATABASE_URL"]
+app.config["SQLALCHEMY_DATABASE_URI"] = os.environ["DATABASE_URL"]
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 function_mapper = {
@@ -36,28 +38,8 @@ function_mapper = {
     "int-indef": integrateExpressionIndefinite,
     "limit": getLimit,
     "series": getSeries,
-    "fourier": getFourierSeries
+    "fourier": getFourierSeries,
 }
-
-db = SQLAlchemy(app)
-
-
-class Record(db.Model):
-    __tablename__ = "logging"
-    _id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    time = db.Column(db.DateTime, nullable=False)
-    ip = db.Column(db.String(20), nullable=False)
-    # name = db.Column(db.String(100), nullable=False)  # get language, version as well?
-    browser = db.Column(db.String(100), nullable=False)
-    platform = db.Column(db.String(30), nullable=False)
-    site = db.Column(db.String(15), nullable=False)
-
-    def __init__(self, site_name):
-        self.site = site_name
-        self.time = datetime.utcnow()
-        self.ip = request.headers.getlist("X-Forwarded-For")[0]
-        self.platform = request.user_agent.platform
-        self.browser = request.user_agent.browser
 
 
 class loggingInfoTable(Table):
@@ -75,36 +57,24 @@ def getFunctionCall(url):
     return function_name, function_reference
 
 
-def incrementCounter(function_name):
-    with COUNTER.get_lock():
-        COUNTER.value += 1
-    data = Record(function_name)
-    db.session.add(data)
-    db.session.commit()
-
-
-def getCounter():
-    result = db.session.query(Record).count()
-    return result
-
-
 @app.route("/", methods=["GET"])
 def home(*vargs):
-    incrementCounter("home")
-    total_accesses = getCounter()
-    print(total_accesses)
-    result = f'''Hello stranger!<br/>
+    db.log("home", request)
+    accesses = db.uniqueCount(start_time)
+    print(accesses)
+    total = db.getCount(start_time)
+    result = f"""Hello stranger!<br/>
     It seems you do not know how to use my AaaS.<br/>
-    My AaaS has been used by over {total_accesses} clients for their daily needs.
-    In fact, there are currently {COUNTER.value} active clients successfully using my AaaS for their applications!<br/>
+    My AaaS has been used by over {accesses} clients for their daily needs.
+    In fact, a total of {total} requests have been made to my AaaS.<br/>
     What are you waiting for? Join all these developers and start useing my AaaS today!<br/>
-    To learn more about my AaaS, visit https://github.com/aditeyabaral/arithmetic-as-a-service'''
+    To learn more about my AaaS, visit https://github.com/aditeyabaral/arithmetic-as-a-service"""
     return result, 200
 
 
 @app.route("/logging", methods=["GET"])
 def getLogging(*vargs):
-    result = db.session.query(Record).all()
+    result = db.getlogginginfo()
     table = loggingInfoTable(result)
     table.border = True
     return render_template("table.html", table=table), 200
@@ -135,9 +105,11 @@ def getLogging(*vargs):
 @app.route("/fourier/<path:vargs>", methods=["GET"])
 def call(vargs):
     function_name, function_reference = getFunctionCall(flask.request.base_url)
-    incrementCounter(function_name)
+    db.log(function_name, request)
     return getFunctionResult(function_reference, vargs)
 
 
 if __name__ == "__main__":
-    app.run()
+    db = LoggingDatabase()
+    start_time = datetime.now(IST)
+    app.run(host="0.0.0.0", port=5000)

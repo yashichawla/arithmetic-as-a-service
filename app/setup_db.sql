@@ -1,0 +1,8 @@
+CREATE TABLE IF NOT EXISTS LOGGING(
+    id SERIAL PRIMARY KEY,
+    time TIMESTAMP,
+    ip VARCHAR(20),
+    browser VARCHAR(100),
+    platform VARCHAR(30),
+    site VARCHAR(15) 
+);
